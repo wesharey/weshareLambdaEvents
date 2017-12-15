@@ -36,9 +36,9 @@ const getEvents = () => {
     }).then(reducePayload);
 };
 
-const handler = (event, context, callback) => {
-    console.log("Received event:", JSON.stringify(event, null, 2));
+const getIds = events => events.map(event => event.id);
 
+const handler = (event, context, callback) => {
     getEvents().then((events) => {
         const params = {
             Bucket: bucket,
@@ -47,16 +47,16 @@ const handler = (event, context, callback) => {
             ContentType: contentType,
             ACL: "public-read"
         };
-        s3.putObject(params, (err, events) => {
+        s3.putObject(params, (err, res) => {
             if (err) {
-                console.log(err);
                 const message = `Error putting object ${eventsFilename} in bucket ${bucket}. Make sure this function has access to it, and the bucket is in the same region as this function.`;
-                console.log(message);
+                console.log(message, err);
                 callback(message);
             } else {
-                const message = `Done writing ${eventsFilename} with content type ${contentType}`;
+                const eventIds = getIds(events);
+                const message = `Written events ${eventIds} in ${eventsFilename}.`;
                 console.log(message);
-                callback(null, message);
+                callback(null, eventIds);
             }
         });
     });
